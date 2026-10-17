@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import numpy as np
 import cv2
+import json
 
 POINT_COLOR = (0, 0, 255)
 LINE_COLOR = (0, 255, 0)
@@ -53,7 +54,24 @@ def select_roi(image_path: str, max_display_dim: int = 1080) -> np.ndarray:
 
     # rescale clicked points back to the original full-resolution image
     original_scale_points = [(int(x / scale), int(y / scale)) for x, y in roi_points]
-    return np.array([original_scale_points], dtype=np.int32)
+    roi = np.array([original_scale_points], dtype=np.int32)
+
+    # print roi numbers for visibility / tracking
+    if len(original_scale_points) >= 6:
+        clicks = [original_scale_points[i] for i in (0, 1, 3, 5)]
+        quad = roi_points_to_quad(roi)[0].tolist()
+
+        print("Clicked corners (full-res):", clicks)
+        print("Effective ROI quad (BL, TL, TR, BR):", quad)
+
+        vis = img.copy()
+        cv2.polylines(vis, [np.array(quad, dtype=np.int32)], True, (0, 255, 255), 4)
+        cv2.imwrite("last_roi_overlay.png", vis)
+
+        with open("last_roi.json", "w") as f:
+            json.dump({"clicked": clicks, "effective_quad": quad}, f)
+
+    return roi
 
 
 def roi_points_to_quad(roi_points: np.ndarray, dtype=np.int32) -> np.ndarray:

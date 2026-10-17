@@ -208,6 +208,11 @@ Click and drag to trace an outline around a visible line marking, press **`s`** 
 
 ### `alina evaluate`
 
+This is the legacy ground-truth comparison command. Ground-truth alignment
+with the experimental frames has not been established, so its scores are not
+used as validated accuracy results for the automated ROI experiments. Use
+`experiments.results_analysis` for the experiment metrics described below.
+
 Computes precision, recall, and F1 by comparing ALINA's coordinate output against ground-truth (CBEM) coordinate files. Use this after you have both a ground-truth set (from `cbem`) and ALINA's output (from `label`) for the same frames, to measure how accurate the labeling was.
 
 ```bash
@@ -257,6 +262,64 @@ python cli.py superimpose \
 |---|---|---|
 | Sliding Window | O(m × n) | 10.90 |
 | **CIRCLEDAT** | **O(k)** | **3.33** |
+
+## Maria's Assignment 4: automated ROI experiments
+
+The current experiment workflow is intentionally small and self-contained:
+`experiments/roi_methods.py` provides five ROI methods, `run_batch.py` runs
+them over all frames with resumable logging, and `results_analysis.py` writes
+overall and per-video tables plus detection-rate and processing-time charts.
+
+The experiments evaluate **detection frequency and processing time**, without
+reading ground-truth files. A detection means that a successfully processed
+frame contains at least one output marking pixel. It does not establish that
+the marking is correct, and detection rate must not be reported as accuracy,
+precision, recall, or F1.
+
+`results_analysis` produces:
+
+- `overall.csv`: metrics grouped by ROI method.
+- `by_video.csv`: the same metrics grouped by video and method.
+- `detection_rate.png`, `processing_time.png`, and
+  `detection_rate_by_video.png`: comparison charts.
+
+Detection rate is detected frames divided by all recorded frame attempts,
+including failed attempts. The tables report completed frames and errors
+separately. Runtime averages use completed frames only and report ROI selection,
+ALINA processing, and their sum in milliseconds; image loading and output writing
+are excluded. Missing runtime averages are left blank. These summaries cover
+only the frames recorded in `results.csv`, so compare methods on the same frame
+set and check counts before interpreting partial runs. Existing batch CSVs can
+be analyzed again without rerunning ALINA.
+
+Before running the experiments, check that all input frames have the same
+image dimensions (width and height). These experiments use **1920 × 1080**
+frames. If any frames have different dimensions, use `resize-images` to
+resize them before running the batch.
+
+For video 1, create the resized input folder expected by the batch runner:
+
+```bash
+python cli.py resize-images \
+  --input-dir data/Raw_Data/vidd_1 \
+  --output-dir data/Raw_Data_1080/vidd_1 \
+  --width 1920 --height 1080
+```
+
+This generated folder is ignored by Git, so create it after cloning the repository. Also check the frames in `data/Raw_Data/vidd_2` and `data/Raw_Data/vidd_3`. If you resize those into separate folders, update `VIDEOS` in `experiments/run_batch.py` to point to the resized inputs.
+
+```bash
+# First verify the workflow on five frames.
+python -m experiments.run_batch --max-frames 5 --output-root outputs/smoke_test
+
+# Then run all 150 supplied frames (50 frames per video).
+python -m experiments.run_batch --output-root outputs/final_dynamic
+
+# Summarize a completed run without rerunning ALINA.
+python -m experiments.results_analysis --results outputs/final_dynamic/results.csv
+```
+
+The batch runner checkpoints after every frame and method. Re-running an identical command resumes incomplete work.
 
 ## References
 

@@ -1,0 +1,2 @@
+# Preserve source coordinate files and accept their existing CRLF endings.
+gt_eval/**/*.txt -text whitespace=cr-at-eol

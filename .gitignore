@@ -1,0 +1,16 @@
+venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+outputs/
+archive/
+.pytest_cache/
+.mypy_cache/
+.DS_Store
+prof.out
+last_roi.json
+last_roi_overlay.png
+data/Raw_Data_1080/
+data/gt_frames/
+
+gt_eval/
